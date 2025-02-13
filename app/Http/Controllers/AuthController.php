@@ -72,8 +72,8 @@ class AuthController extends Controller
             'email_verified_at' => $user->email_verified_at,
             'created_at' => $user->created_at,
             'updated_at' => $user->updated_at,
-            'roles' => $user->getRoleNames(), // Fetch roles
-            'permissions' => $user->getAllPermissions()->pluck('name'), // Fetch permissions
+            'roles' => $user->getRoleNames(),
+            'permissions' => $user->getAllPermissions()->pluck('name'),
         ]);
     }
 
