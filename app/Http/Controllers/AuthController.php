@@ -37,7 +37,6 @@ class AuthController extends Controller
         // return response()->json(['user' => $user, 'token' => $token]);
         return response()->json(['message' => 'User registered successfully. Please check your email to verify.']);
     }
-
     public function login(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -59,8 +58,6 @@ class AuthController extends Controller
         $user = auth()->user();
         return response()->json(['token' => $token, 'user' => $user]);
     }
-
-
     public function profile()
     {
         $token = auth()->user();
@@ -76,7 +73,6 @@ class AuthController extends Controller
             'permissions' => $user->getAllPermissions()->pluck('name'),
         ]);
     }
-
     public function logout()
     {
         JWTAuth::invalidate(JWTAuth::getToken());
@@ -94,7 +90,6 @@ class AuthController extends Controller
             ? response()->json(['message' => __($status)])
             : response()->json(['error' => __($status)], 500);
     }
-
     public function resetPassword(Request $request)
     {
         $validator = Validator::make($request->all(), [
