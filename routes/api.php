@@ -16,6 +16,7 @@ Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('
 Route::middleware('jwt.auth')->group(function () {
     Route::get('profile', [AuthController::class, 'profile']);
     Route::post('logout', [AuthController::class, 'logout']);
+    Route::post('email/change-password', [AuthController::class, 'changePassword']);
 });
 Route::post('email/resend', [VerifyEmailController::class, 'resend'])
     ->middleware('throttle:6,1');

@@ -5,7 +5,9 @@ namespace App\Services;
 use App\interfaces\AuthInterface;
 use Illuminate\Support\Facades\Validator;
 use Tymon\JWTAuth\Facades\JWTAuth;
-use App\Models\User;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
+
 
 class AuthService
 {
@@ -45,11 +47,7 @@ class AuthService
             'password' => 'required|string|min:6|confirmed',
         ]);
         if ($validator->fails()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Validation failed',
-                'errors' => $validator->errors()
-            ], 422);
+            return response()->json($validator->errors(), 422);
         }
         $user = $this->authRepository->register($request);
         $user->sendEmailVerificationNotification();
@@ -58,20 +56,80 @@ class AuthService
             'message' => 'User registered successfully. Please check your email to verify.'
         ], 201);
     }
-    public function profile()
+    public function profile($id)
     {
-        return $this->authRepository->profile();
+        return $this->authRepository->profile($id);
     }
     public function logout()
     {
-        return $this->authRepository->logout();
+        JWTAuth::invalidate(JWTAuth::getToken());
     }
-    public function sendPasswordResetLink(string $email)
+    public function sendPasswordResetLink($request)
     {
-        return $this->authRepository->sendPasswordResetLink($email);
+        $request->validate([
+            'email' => 'required|email|exists:users,email',
+        ]);
+
+        $status = Password::sendResetLink($request->only('email'));
+
+        return $status === Password::RESET_LINK_SENT
+            ? response()->json(['message' => __($status)])
+            : response()->json(['error' => __($status)], 500);
     }
     public function resetPassword($request)
     {
-        return $this->authRepository->resetPassword($request);
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email',
+            'token' => 'required',
+            'password' => 'required|min:6|confirmed',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 400);
+        }
+
+        // ค้นหา Token จาก email
+        // $resetData = PasswordResetToken::where('email', $request->email)->first();
+        $resetData = $this->authRepository->selectPassword($request->email);
+
+        // ตรวจสอบ Token โดยใช้ Hash::check()
+        if (!$resetData || !Hash::check($request->token, $resetData->token)) {
+            return response()->json(['error' => 'Invalid token.'], 400);
+        }
+
+        // รีเซ็ตรหัสผ่าน
+        $status = Password::reset(
+            [
+                'email' => $request->email,
+                'password' => $request->password,
+                'password_confirmation' => $request->password_confirmation,
+                'token' => $request->token
+            ],
+            function ($user, $password) {
+                $user->forceFill([
+                    'password' => Hash::make($password),
+                ])->save();
+            }
+        );
+
+        if ($status === Password::PASSWORD_RESET) {
+            // ลบ Token ออกจาก Database
+            // PasswordResetToken::where('email', $request->email)->delete();
+            $this->authRepository->deletePassword($request);
+            return response()->json(['message' => 'Password has been successfully reset.']);
+        }
+
+        return response()->json(['error' => 'Invalid token or email.'], 500);
+    }
+    public function changePassword($request)
+    {
+        $validator = Validator::make($request->all(), [
+            'current_password' => 'required|string|min:6',
+            'new_password' => 'required|string|min:6|confirmed'
+        ]);
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 422);
+        }
+        return $this->authRepository->changePassword($request);
     }
 }

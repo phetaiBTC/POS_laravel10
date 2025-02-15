@@ -26,22 +26,29 @@ class AuthRepository implements AuthInterface
         $user = User::where('email', $request->email)->first();
         return $user;
     }
-    public function profile()
+    public function profile($id)
     {
-        $user = auth()->user();
+        $user = User::find($id);
         return $user;
     }
-    public function logout()
+    public function selectPassword($email)
     {
-        JWTAuth::invalidate(JWTAuth::getToken());
+        $resetData = PasswordResetToken::where('email', $email)->first();
+        return $resetData;
     }
-    public function sendPasswordResetLink(string $email)
+    public function deletePassword($email)
     {
-        return Password::sendResetLink(['email' => $email]);
+        PasswordResetToken::where('email', $email)->delete();
     }
-    public function resetPassword($request)
+    public function changePassword($request)
     {
-        $user = User::where('email', $request->email)->first();
-        return $user;
+        $user = User::find(auth()->user()->id);
+        if (Hash::check($request->current_password, $user->password)) {
+            $user->password = Hash::make($request->new_password);
+            $user->save();
+            return response()->json(['message' => 'Password changed successfully.']);
+        } else {    
+            return response()->json(['error' => 'Current password is incorrect.']);
+        }
     }
 }
