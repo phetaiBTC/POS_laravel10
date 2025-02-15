@@ -7,6 +7,6 @@ interface AuthInterface
     public function login($request);
     public function profile();
     public function logout();
-    public function forgotPassword($request);
+    public function sendPasswordResetLink(string $email);
     public function resetPassword($request);
 }

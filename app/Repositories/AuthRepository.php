@@ -6,6 +6,9 @@ use App\Models\User;
 use App\Models\PasswordResetToken;
 use App\interfaces\AuthInterface;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
+use Tymon\JWTAuth\Facades\JWTAuth;
+
 
 class AuthRepository implements AuthInterface
 {
@@ -30,12 +33,11 @@ class AuthRepository implements AuthInterface
     }
     public function logout()
     {
-        auth()->logout();
+        JWTAuth::invalidate(JWTAuth::getToken());
     }
-    public function forgotPassword($request)
+    public function sendPasswordResetLink(string $email)
     {
-        $user = User::where('email', $request->email)->first();
-        return $user;
+        return Password::sendResetLink(['email' => $email]);
     }
     public function resetPassword($request)
     {

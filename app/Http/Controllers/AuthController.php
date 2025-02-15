@@ -11,57 +11,34 @@ use Illuminate\Support\Facades\Password;
 use App\Models\PasswordResetToken;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
+use App\Services\AuthService;
+use Illuminate\Http\JsonResponse;
 
 class AuthController extends Controller
 {
+    protected $authService;
+
+    public function __construct(AuthService $authService)
+    {
+        $this->authService = $authService;
+    }
     public function register(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:6|confirmed',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json($validator->errors(), 422);
-        }
-
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-        ]);
-        $user->sendEmailVerificationNotification();
-        $token = JWTAuth::fromUser($user);
-
-        // return response()->json(['user' => $user, 'token' => $token]);
-        return response()->json(['message' => 'User registered successfully. Please check your email to verify.']);
+        $service = $this->authService->register($request);
+        return response()->json(['message' => $service]);
     }
     public function login(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'email' => 'required|string|email|max:255',
-            'password' => 'required',
-        ]);
-        if ($validator->fails()) {
-            return response()->json($validator->errors(), 422);
+        $service = $this->authService->login($request);
+        if ($service instanceof JsonResponse) {
+            return $service;
         }
-        $checkEmail = User::where('email', $request->email)->first();
-        if (!$checkEmail->hasVerifiedEmail()) {
-            return response()->json(['error' => 'Email not verified.'], 403);
-        }
-        $credentials = $request->only('email', 'password');
-
-        if (!$token = JWTAuth::attempt($credentials)) {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
-        $user = auth()->user();
-        return response()->json(['token' => $token, 'user' => $user]);
+        return response()->json($service);
     }
     public function profile()
     {
         $token = auth()->user();
-        $user= User::find($token->id);
+        $user = User::find($token->id);
         return response()->json([
             'id' => $user->id,
             'name' => $user->name,
