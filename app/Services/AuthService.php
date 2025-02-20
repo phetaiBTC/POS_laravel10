@@ -45,6 +45,8 @@ class AuthService
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:6|confirmed',
+            'phone' => 'required|string',
+            'avatar' => 'nullable|string',
         ]);
         if ($validator->fails()) {
             return response()->json($validator->errors(), 422);

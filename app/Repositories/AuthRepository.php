@@ -18,7 +18,11 @@ class AuthRepository implements AuthInterface
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'phone' => $request->phone,
+            'avatar' => $request->avatar,
+
         ]);
+        $user->assignRole('customer');
         return $user;
     }
     public function login($request)

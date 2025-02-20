@@ -19,7 +19,8 @@ class DatabaseSeeder extends Seeder
             'edit posts',
             'delete posts',
             'publish posts',
-            'view users'
+            'view users',
+            
         ];
 
         foreach ($permissions as $permission) {
@@ -30,11 +31,13 @@ class DatabaseSeeder extends Seeder
         $adminRole = Role::firstOrCreate(['name' => 'admin']);
         $editorRole = Role::firstOrCreate(['name' => 'editor']);
         $userRole = Role::firstOrCreate(['name' => 'user']);
+        $customerRole = Role::firstOrCreate(['name' => 'customer']);
 
         // Assign permissions to roles
         $adminRole->givePermissionTo($permissions);
         $editorRole->givePermissionTo(['create posts', 'edit posts', 'publish posts']);
         $userRole->givePermissionTo(['view users']);
+        $customerRole->givePermissionTo(['view users']);
 
         // Assign a role to a user (Example: Assign 'admin' role to user with ID 1)
         $user = \App\Models\User::find(1);
